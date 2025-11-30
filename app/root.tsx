@@ -6,11 +6,15 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
+import { ThemeProvider, CssBaseline } from '@mui/material'; // <--- MUI
+import { theme } from './config/theme'; // <--- Tu tema rosado
+import { AuthProvider } from './context/AuthContext'; // <--- Tu seguridad
+import { CartProvider } from './context/CartContext'; // <--- Using CartContext
 
-import type { Route } from "./+types/root";
+// import type { Route } from "./+types/root"; // Commented out - not available in current setup
 import "./app.css";
 
-export const links: Route.LinksFunction = () => [
+export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -20,6 +24,10 @@ export const links: Route.LinksFunction = () => [
   {
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+  },
+  {
+    rel: "stylesheet",
+    href: "https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap",
   },
 ];
 
@@ -41,11 +49,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
 export default function App() {
-  return <Outlet />;
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline /> {/* Resetea los estilos del navegador */}
+      <AuthProvider>
+        <CartProvider>
+          <Outlet />
+        </CartProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export function ErrorBoundary({ error }: { error: Error }) {
   let message = "Oops!";
   let details = "An unexpected error occurred.";
   let stack: string | undefined;
