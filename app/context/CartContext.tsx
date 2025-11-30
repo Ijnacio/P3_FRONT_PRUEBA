@@ -45,7 +45,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  // Cálculos financieros (Chile: IVA 19%)
+  // calcular total, neto e iva
   const total = items.reduce((sum, item) => sum + (item.producto.precio * item.cantidad), 0);
   const neto = Math.round(total / 1.19);
   const iva = total - neto;

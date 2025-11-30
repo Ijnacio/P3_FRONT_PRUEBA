@@ -20,16 +20,13 @@ export default function AdminLayout() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // PROTECCIÓN DE RUTA
+  // verificar que sea admin
   useEffect(() => {
-    // Si no hay usuario logueado, o si el usuario NO es admin
     if (!user || user.rol !== 'admin') {
-      // Redirigir al login
       navigate("/login");
     }
   }, [user, navigate]);
 
-  // Si no hay usuario, retornamos null mientras redirige para evitar flash de contenido
   if (!user) return null;
 
   const handleDrawerToggle = () => {

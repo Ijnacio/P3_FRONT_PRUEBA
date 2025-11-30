@@ -9,9 +9,9 @@ export default function Home() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // redirigir segun el rol del usuario
   useEffect(() => {
     if (!isLoading && user) {
-      // Redirección inteligente según rol
       if (user.rol === 'admin') navigate('/admin');
       else navigate('/caja');
     }

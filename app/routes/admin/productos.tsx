@@ -34,6 +34,7 @@ export default function AdminProductos() {
     cargarDatos();
   }, []);
 
+  // traer productos y categorias del backend
   const cargarDatos = async () => {
     try {
       setLoading(true);
@@ -45,7 +46,7 @@ export default function AdminProductos() {
       setCategorias(categoriasData);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      // Datos de fallback
+      // datos de ejemplo por si falla
       setProductos([
         {
           id: 1,

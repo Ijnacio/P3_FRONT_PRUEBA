@@ -6,12 +6,10 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import { ThemeProvider, CssBaseline } from '@mui/material'; // <--- MUI
-import { theme } from './config/theme'; // <--- Tu tema rosado
-import { AuthProvider } from './context/AuthContext'; // <--- Tu seguridad
-import { CartProvider } from './context/CartContext'; // <--- Using CartContext
-
-// import type { Route } from "./+types/root"; // Commented out - not available in current setup
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { theme } from './config/theme';
+import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import "./app.css";
 
 export const links = () => [

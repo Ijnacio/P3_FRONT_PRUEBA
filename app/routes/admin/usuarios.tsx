@@ -36,6 +36,7 @@ export default function AdminUsuarios() {
     cargarUsuarios();
   }, []);
 
+  // cargar lista de usuarios
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
@@ -43,7 +44,7 @@ export default function AdminUsuarios() {
       setUsuarios(usuariosData);
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
-      // Datos de fallback
+      // datos de ejemplo si no conecta
       setUsuarios([
         {
           id: 1,

@@ -25,10 +25,9 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  // Si ya estás logueado, redirigir automáticamente
+  // si ya esta logueado mandarlo directo a la caja
   useEffect(() => {
     if (user) {
-      // Tanto admin como vendedor van a POS/caja
       navigate('/caja');
     }
   }, [user, navigate]);
@@ -40,11 +39,9 @@ export default function Login() {
 
     try {
       await login(rut, password);
-      // No necesitamos navegar aquí manualmente, el useEffect lo hará al detectar el usuario
     } catch (err: any) {
       console.error("Error Login:", err);
       
-      // Mensaje amigable si falla la conexión con el backend
       if (err.message === "Network Error" || !err.response) {
         setError("No se pudo conectar con el servidor. Revisa que el Backend esté corriendo.");
       } else if (err.response?.status === 401) {

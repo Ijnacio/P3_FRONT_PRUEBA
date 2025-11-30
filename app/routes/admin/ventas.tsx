@@ -39,6 +39,7 @@ export default function AdminVentas() {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [detailDialog, setDetailDialog] = useState({ open: false, venta: null as Venta | null });
   const [editDialog, setEditDialog] = useState({ open: false, venta: null as Venta | null, medioPago: '' });
+  const [boletaDialog, setBoletaDialog] = useState({ open: false, venta: null as Venta | null });
   const [notification, setNotification] = useState({ open: false, msg: '', type: 'success' as 'success' | 'error' });
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function AdminVentas() {
   const cargarDatos = async () => {
     try {
       setLoading(true);
-      // Convertir Date a string YYYY-MM-DD si existe
+      // si hay filtro de fecha lo convertimos al formato que necesita el backend
       const dateStr = dateFilter 
         ? `${dateFilter.getFullYear()}-${String(dateFilter.getMonth() + 1).padStart(2, '0')}-${String(dateFilter.getDate()).padStart(2, '0')}`
         : undefined;
@@ -59,7 +60,7 @@ export default function AdminVentas() {
       setVentas(ventasData || []);
       setCajaAdmin(cajaData);
     } catch (error) {
-      console.error('❌ Error al cargar datos de ventas:', error);
+      console.error('Error al cargar datos de ventas:', error);
       // Solo en caso de error, usar datos vacíos
       setVentas([]);
       setCajaAdmin({
@@ -82,19 +83,17 @@ export default function AdminVentas() {
     const ventaId = venta.id || venta.folio;
     if (!ventaId) {
       setNotification({ open: true, msg: 'No se puede eliminar esta venta', type: 'error' });
-      console.error('Venta sin ID:', venta);
       return;
     }
     
     if (!window.confirm(`¿Anular venta #${venta.folio}? El stock de los productos será devuelto.`)) return;
 
     try {
-      console.log('🗑️ Eliminando venta:', ventaId);
       await deleteVenta(ventaId);
       setNotification({ open: true, msg: 'Venta anulada y stock devuelto', type: 'success' });
       cargarDatos(); // Recargar lista
     } catch (error) {
-      console.error('❌ Error al eliminar:', error);
+      console.error('Error al eliminar:', error);
       setNotification({ open: true, msg: 'No se pudo eliminar la venta', type: 'error' });
     }
   };
@@ -113,48 +112,61 @@ export default function AdminVentas() {
     const ventaId = editDialog.venta.id || editDialog.venta.folio;
     if (!ventaId) {
       setNotification({ open: true, msg: 'No se puede actualizar esta venta', type: 'error' });
-      console.error('Venta sin ID:', editDialog.venta);
       return;
     }
     try {
-      console.log('✏️ Actualizando venta:', ventaId, 'Medio de pago:', editDialog.medioPago);
       await updateVenta(ventaId, { medioPago: editDialog.medioPago as any });
       setNotification({ open: true, msg: 'Medio de pago actualizado', type: 'success' });
       setEditDialog({ open: false, venta: null, medioPago: '' });
       cargarDatos();
     } catch (error) {
-      console.error('❌ Error al actualizar:', error);
+      console.error('Error al actualizar:', error);
       setNotification({ open: true, msg: 'Error al actualizar', type: 'error' });
     }
   };
 
+  // colores para los chips de metodo de pago
   const getMetodoPagoColor = (metodo: string) => {
-    switch (metodo) {
-      case 'EFECTIVO': return 'success';
-      case 'DEBITO': return 'info';
-      case 'CREDITO': return 'warning';
-      default: return 'default';
-    }
+    if (metodo === 'EFECTIVO') return 'success';
+    if (metodo === 'DEBITO') return 'info';
+    if (metodo === 'CREDITO') return 'warning';
+    return 'default';
   };
 
   // Reemplazado por formatDateLocal
 
+  // aca se filtran las ventas segun lo que busque el usuario
   const filteredVentas = ventas.filter(venta => {
-    const cleanSearchTerm = searchTerm.replace('#', '').trim();
-    const matchesSearch = !cleanSearchTerm ||
-      venta.folio?.toString().includes(cleanSearchTerm) ||
-      (venta.vendedor?.rut || '').includes(cleanSearchTerm);
+    let matchesSearch = true;
+    if (searchTerm.trim()) {
+      const searchValue = searchTerm.trim();
+      
+      if (searchValue.startsWith('#')) {
+        // Buscar solo por folio
+        const folioSearch = searchValue.substring(1);
+        matchesSearch = venta.folio?.toString().includes(folioSearch) ?? false;
+      } else if (/^\d+$/.test(searchValue)) {
+        // Buscar por folio o RUT
+        matchesSearch = (venta.folio?.toString().includes(searchValue) ?? false) ||
+               (venta.vendedor?.rut || '').includes(searchValue);
+      } else {
+        // Buscar por nombre de vendedor
+        matchesSearch = (venta.vendedor?.nombre || '').toLowerCase().includes(searchValue.toLowerCase());
+      }
+    }
     
+    // filtrar por metodo de pago
     const matchesPayment = !paymentFilter || 
       (venta.resumen?.medioPago || venta.medioPago) === paymentFilter;
 
+    // filtrar por vendedor tambien
     const matchesVendor = !vendorFilter ||
       (venta.vendedor?.nombre || '') === vendorFilter;
 
     return matchesSearch && matchesPayment && matchesVendor;
   });
 
-  // Calcular totales de las ventas filtradas
+  // sumar los totales de las ventas que se estan mostrando
   const totalesFiltrados = filteredVentas.reduce((acc, venta) => {
     const total = venta.resumen?.total || venta.total || 0;
     const medioPago = venta.resumen?.medioPago || venta.medioPago || 'EFECTIVO';
@@ -167,9 +179,9 @@ export default function AdminVentas() {
     return acc;
   }, { total: 0, efectivo: 0, debito: 0, credito: 0 });
 
-  // Determinar si se están usando filtros
   const hasFilters = dateFilter || paymentFilter || vendorFilter || searchTerm.trim();
 
+  // para expandir y contraer las filas de la tabla
   const handleRowExpand = (ventaId: number) => {
     setExpandedRow(expandedRow === ventaId ? null : ventaId);
   };
@@ -178,9 +190,93 @@ export default function AdminVentas() {
     setDetailDialog({ open: true, venta });
   };
 
+  // abrir dialog para ver la boleta antes de imprimir
   const handlePrint = (venta: Venta) => {
-    // TODO: Implementar impresión de boleta
-    alert(`Imprimir boleta folio ${venta.folio}`);
+    setBoletaDialog({ open: true, venta });
+  };
+
+  // esta funcion realmente imprime la boleta
+  const handleActualPrint = () => {
+    if (!boletaDialog.venta) return;
+    const venta = boletaDialog.venta;
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) return;
+
+    const items = venta.items || venta.detalles || [];
+    const total = venta.resumen?.total || venta.total || 0;
+    const neto = venta.resumen?.neto || venta.neto || Math.round(total / 1.19);
+    const iva = venta.resumen?.iva || venta.iva || (total - neto);
+    const medioPago = venta.resumen?.medioPago || venta.medioPago || 'EFECTIVO';
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Boleta #${venta.folio}</title>
+        <style>
+          @page { size: 80mm auto; margin: 0; }
+          body { font-family: monospace; width: 80mm; margin: 10mm auto; padding: 0; font-size: 12px; }
+          .center { text-align: center; }
+          .bold { font-weight: bold; }
+          .line { border-top: 1px dashed #000; margin: 8px 0; }
+          table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+          td { padding: 2px 0; }
+          .right { text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div class="center bold">PASTELERÍA 1000 SABORES</div>
+        <div class="center">San Joaquín, Chile</div>
+        <div class="center">RUT: 11.111.111-1</div>
+        <div class="line"></div>
+        <div class="center bold">BOLETA ELECTRÓNICA</div>
+        <div class="center">N° ${venta.folio}</div>
+        <div class="line"></div>
+        <div>Fecha: ${formatDateLocal(venta.fecha)}</div>
+        <div>Vendedor: ${venta.vendedor?.nombre || 'N/A'}</div>
+        <div>RUT: ${venta.vendedor?.rut || 'N/A'}</div>
+        <div class="line"></div>
+        <table>
+          <thead>
+            <tr>
+              <td class="bold">Producto</td>
+              <td class="bold right">Cant</td>
+              <td class="bold right">Precio</td>
+              <td class="bold right">Total</td>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(item => `
+              <tr>
+                <td>${item.producto}</td>
+                <td class="right">${item.cantidad}</td>
+                <td class="right">$${item.precioUnitario.toLocaleString()}</td>
+                <td class="right">$${item.subtotal.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="line"></div>
+        <table>
+          <tr><td>NETO:</td><td class="right">$${neto.toLocaleString()}</td></tr>
+          <tr><td>IVA (19%):</td><td class="right">$${iva.toLocaleString()}</td></tr>
+          <tr class="bold"><td>TOTAL:</td><td class="right">$${total.toLocaleString()}</td></tr>
+        </table>
+        <div class="line"></div>
+        <div>Medio de Pago: ${medioPago}</div>
+        <div class="line"></div>
+        <div class="center">¡Gracias por su compra!</div>
+        <div class="center">www.1000sabores.cl</div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   if (loading) {
@@ -297,6 +393,7 @@ export default function AdminVentas() {
               <InputLabel>Vendedor</InputLabel>
               <Select
                 value={vendorFilter}
+                label="Vendedor"
                 onChange={(e) => setVendorFilter(e.target.value)}
               >
                 <MenuItem value="">Todos</MenuItem>
@@ -313,6 +410,7 @@ export default function AdminVentas() {
               <InputLabel>Método de Pago</InputLabel>
               <Select
                 value={paymentFilter}
+                label="Método de Pago"
                 onChange={(e) => setPaymentFilter(e.target.value)}
               >
                 <MenuItem value="">Todos</MenuItem>
@@ -583,6 +681,98 @@ export default function AdminVentas() {
         <DialogActions>
           <Button onClick={() => setEditDialog({ open: false, venta: null, medioPago: '' })}>Cancelar</Button>
           <Button variant="contained" onClick={handleSaveEdit}>Guardar Cambios</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* DIALOG BOLETA */}
+      <Dialog 
+        open={boletaDialog.open} 
+        onClose={() => setBoletaDialog({ open: false, venta: null })}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Vista Previa - Boleta #{boletaDialog.venta?.folio}</DialogTitle>
+        <DialogContent>
+          {boletaDialog.venta && (() => {
+            const venta = boletaDialog.venta;
+            const items = venta.items || venta.detalles || [];
+            const total = venta.resumen?.total || venta.total || 0;
+            const neto = venta.resumen?.neto || venta.neto || Math.round(total / 1.19);
+            const iva = venta.resumen?.iva || venta.iva || (total - neto);
+            const medioPago = venta.resumen?.medioPago || venta.medioPago || 'EFECTIVO';
+            
+            return (
+              <Box sx={{ 
+                fontFamily: 'monospace', 
+                maxWidth: '300px', 
+                margin: '0 auto',
+                padding: 2,
+                border: '1px solid #ccc',
+                borderRadius: 1,
+                backgroundColor: '#fff'
+              }}>
+                <Box textAlign="center" fontWeight="bold" mb={1}>PASTELERÍA 1000 SABORES</Box>
+                <Box textAlign="center" fontSize="0.9em">San Joaquín, Chile</Box>
+                <Box textAlign="center" fontSize="0.9em" mb={1}>RUT: 11.111.111-1</Box>
+                <Box borderTop="1px dashed #000" my={1} />
+                <Box textAlign="center" fontWeight="bold">BOLETA ELECTRÓNICA</Box>
+                <Box textAlign="center" mb={1}>N° {venta.folio}</Box>
+                <Box borderTop="1px dashed #000" my={1} />
+                <Box fontSize="0.9em">Fecha: {formatDateLocal(venta.fecha)}</Box>
+                <Box fontSize="0.9em">Vendedor: {venta.vendedor?.nombre || 'N/A'}</Box>
+                <Box fontSize="0.9em" mb={1}>RUT: {venta.vendedor?.rut || 'N/A'}</Box>
+                <Box borderTop="1px dashed #000" my={1} />
+                
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontSize: '0.85em', fontWeight: 'bold', padding: '4px 0' }}>Producto</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '0.85em', fontWeight: 'bold', padding: '4px 0' }}>Cant</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '0.85em', fontWeight: 'bold', padding: '4px 0' }}>Precio</TableCell>
+                      <TableCell align="right" sx={{ fontSize: '0.85em', fontWeight: 'bold', padding: '4px 0' }}>Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {items.map((item, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell sx={{ fontSize: '0.85em', padding: '2px 0' }}>{item.producto}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.85em', padding: '2px 0' }}>{item.cantidad}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.85em', padding: '2px 0' }}>${item.precioUnitario.toLocaleString()}</TableCell>
+                        <TableCell align="right" sx={{ fontSize: '0.85em', padding: '2px 0' }}>${item.subtotal.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                
+                <Box borderTop="1px dashed #000" my={1} />
+                <Box display="flex" justifyContent="space-between" fontSize="0.9em">
+                  <span>NETO:</span>
+                  <span>${neto.toLocaleString()}</span>
+                </Box>
+                <Box display="flex" justifyContent="space-between" fontSize="0.9em">
+                  <span>IVA (19%):</span>
+                  <span>${iva.toLocaleString()}</span>
+                </Box>
+                <Box display="flex" justifyContent="space-between" fontSize="0.9em" fontWeight="bold">
+                  <span>TOTAL:</span>
+                  <span>${total.toLocaleString()}</span>
+                </Box>
+                <Box borderTop="1px dashed #000" my={1} />
+                <Box fontSize="0.9em">Medio de Pago: {medioPago}</Box>
+                <Box borderTop="1px dashed #000" my={1} />
+                <Box textAlign="center" fontSize="0.85em">¡Gracias por su compra!</Box>
+                <Box textAlign="center" fontSize="0.85em">www.1000sabores.cl</Box>
+              </Box>
+            );
+          })()}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBoletaDialog({ open: false, venta: null })}>
+            Cerrar
+          </Button>
+          <Button variant="contained" onClick={handleActualPrint} startIcon={<Print />}>
+            Imprimir
+          </Button>
         </DialogActions>
       </Dialog>
 

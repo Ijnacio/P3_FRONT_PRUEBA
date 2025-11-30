@@ -21,20 +21,20 @@ export default function AdminDashboard() {
   const [ventasRecientes, setVentasRecientes] = useState<Venta[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Cargar datos al iniciar
+  // cargar datos cuando abre la pagina
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         const [cajaData, historialData] = await Promise.all([
           getCajaAdmin(),
-          getHistorialAdmin() // Todas las ventas históricas
+          getHistorialAdmin()
         ]);
         setStats(cajaData);
-        setVentasRecientes(historialData); // Guardamos todas para calcular top productos
+        setVentasRecientes(historialData);
       } catch (error) {
         console.error("Error cargando dashboard:", error);
         
-        // Datos de fallback para mostrar la UI
+        // si falla poner datos vacios para que no se rompa
         setStats({
           fecha: new Date().toISOString(),
           cantidadVentas: 0,

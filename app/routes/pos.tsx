@@ -39,6 +39,7 @@ export default function POS() {
     fetchData();
   }, []);
 
+  // cargar categorias y productos del backend
   const fetchData = async () => {
     try {
       const [cats, prods] = await Promise.all([
@@ -54,6 +55,7 @@ export default function POS() {
     }
   };
 
+  // esta funcion se llama despues de hacer una venta para actualizar el stock
   const recargarProductos = async () => {
     try {
       const prods = await getProductos();
@@ -63,6 +65,7 @@ export default function POS() {
     }
   };
   
+  // filtrar productos por busqueda y categoria
   const productosFiltrados = useMemo(() => {
     return productos.filter((p: Producto) => {
       const matchText = p.nombre.toLowerCase().includes(search.toLowerCase());
@@ -71,6 +74,7 @@ export default function POS() {
     });
   }, [productos, search, catId]);
 
+  // cerrar sesion
   const handleLogout = () => {
     logout();
   };
@@ -598,7 +602,7 @@ function BoletaComponent({ venta, items, vendedor, onClose }: any) {
   }, []);
   
   return (
-    <Box className="boleta-print" sx={{ bgcolor: 'white', maxWidth: '600px', mx: 'auto' }}>
+    <Box sx={{ bgcolor: 'white', maxWidth: '600px', mx: 'auto', '@media print': { display: 'block' } }}>
       {/* Header de la Boleta */}
       <Box sx={{ p: 3, borderBottom: '2px solid #000', textAlign: 'center' }}>
         <Typography variant="h5" fontWeight="bold" mb={1}>
@@ -740,7 +744,7 @@ function BoletaComponent({ venta, items, vendedor, onClose }: any) {
       </Box>
 
       {/* Botones de acción */}
-      <Box className="no-print" sx={{ p: 2, display: 'flex', gap: 2, justifyContent: 'center', borderTop: '1px solid #ddd' }}>
+      <Box sx={{ p: 2, display: 'flex', gap: 2, justifyContent: 'center', borderTop: '1px solid #ddd', '@media print': { display: 'none' } }}>
         <Button 
           variant="outlined" 
           onClick={() => window.print()}

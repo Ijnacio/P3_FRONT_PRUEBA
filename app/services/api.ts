@@ -1,5 +1,4 @@
 import axios from "axios";
-// Asegúrate de importar todos los tipos que usas
 import type { 
   AuthResponse, User, 
   Categoria, Producto, 
@@ -9,65 +8,46 @@ import type {
   CreateCategoriaDto, UpdateCategoriaDto
 } from "../types";
 
+// url del backend
 const API_URL = "http://localhost:3006/api/v1";
 
+// crear instancia de axios
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 10000, // 10 segundos de timeout
+  timeout: 10000,
 });
 
-// Función para verificar conectividad con el backend
+// funcion para verificar si el backend esta funcionando
 export const checkBackendConnection = async () => {
   try {
     const response = await api.get("/health");
     return { connected: true, message: "Backend conectado", data: response.data };
   } catch (error) {
-    console.error("Error conectando al backend:", error);
     return { connected: false, message: "Backend no disponible", error };
   }
 };
 
-// Interceptor para el Token (CORREGIDO PARA SSR)
+// interceptor para agregar el token a todas las peticiones
 api.interceptors.request.use((config) => {
-  // Verificamos si estamos en el navegador antes de llamar a localStorage
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
-    // Log detallado para operaciones DELETE
-    if (config.method?.toUpperCase() === 'DELETE') {
-      console.log('🔍 DELETE Request:', {
-        url: config.url,
-        fullUrl: `${config.baseURL}${config.url}`,
-        hasToken: !!token,
-        headers: config.headers
-      });
-    }
   }
   return config;
 });
 
-// Interceptor de respuesta para manejo de errores
+// interceptor para manejar errores, si el token expiro redirigir al login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      // Token expirado o inválido
       localStorage.removeItem("access_token");
       localStorage.removeItem("user_data");
       window.location.href = "/login";
     }
-    
-    // Log de errores para debugging
-    console.error("API Error:", {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
-    });
     
     return Promise.reject(error);
   }

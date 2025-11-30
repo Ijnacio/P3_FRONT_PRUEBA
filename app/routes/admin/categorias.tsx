@@ -39,7 +39,6 @@ export default function AdminCategorias() {
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Cargar categorías
   useEffect(() => {
     cargarCategorias();
   }, []);
