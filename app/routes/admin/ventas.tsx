@@ -17,12 +17,11 @@ import type { Venta, CajaAdmin } from '~/types';
 import { getHistorialAdmin, getCajaAdmin, deleteVenta, updateVenta } from '~/services/api';
 import { getFechaHoy, extraerFecha } from '~/utils/dateUtils';
 
-// Mostrar fecha y hora sin corrimiento a "ayer": tratar la fecha como UTC
+// Mostrar fecha y hora en zona horaria local (Chile)
 const formatDateLocal = (isoString: string) => {
   if (!isoString) return '-';
   const d = new Date(isoString);
   return d.toLocaleString('es-CL', {
-    timeZone: 'UTC',
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
@@ -135,8 +134,14 @@ export default function AdminVentas() {
 
   // Reemplazado por formatDateLocal
 
+  // primero filtrar solo ventas de hoy (usando zona horaria local)
+  const ventasDelDia = ventas.filter(v => {
+    if (!v.fecha) return false;
+    return extraerFecha(v.fecha) === getFechaHoy();
+  });
+  
   // aca se filtran las ventas segun lo que busque el usuario
-  const filteredVentas = ventas.filter(venta => {
+  const filteredVentas = ventasDelDia.filter(venta => {
     let matchesSearch = true;
     if (searchTerm.trim()) {
       const searchValue = searchTerm.trim();

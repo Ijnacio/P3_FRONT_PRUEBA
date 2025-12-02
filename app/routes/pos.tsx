@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { getCategorias, getProductos, createVenta } from "../services/api";
+import { getFechaHoy } from "../utils/dateUtils";
 import type { Producto, Categoria } from "../types";
 
 import { 
@@ -486,14 +487,20 @@ function ModalPago({ open, onClose, onVentaCompletada }: { open: boolean, onClos
         montoEntregado: medioPago === 'EFECTIVO' ? parseInt(montoEntregado) : total
       };
       
+      console.log('Datos de venta a enviar:', ventaData);
+      console.log('Usuario actual:', user);
+      
       const venta = await createVenta(ventaData);
+      
+      console.log('Venta creada exitosamente:', venta);
+      
       setVentaRealizada({ ...venta, vuelto });
       clearCart();
-      // Recargar productos para actualizar el stock
       await onVentaCompletada();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error procesando venta:', error);
-      alert('Error al procesar la venta');
+      console.error('Respuesta del servidor:', error.response?.data);
+      alert(`Error al procesar la venta: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }

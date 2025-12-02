@@ -8,16 +8,19 @@ export function getFechaHoy(): string {
 }
 
 // sacar solo la fecha de un string que viene del backend
-// funciona con formato ISO (2025-11-30T14:30:00Z) o formato de base de datos (2025-11-29 23:52:06)
+// convierte a hora de Chile (UTC-3) para evitar problemas de zona horaria
 export function extraerFecha(fechaString: string): string {
   if (!fechaString) return '';
-  if (fechaString.includes('T')) {
-    return fechaString.split('T')[0];
-  }
-  if (fechaString.includes(' ')) {
-    return fechaString.split(' ')[0];
-  }
-  return fechaString;
+  
+  // convertir a Date y usar la zona horaria de Chile
+  const fecha = new Date(fechaString);
+  
+  // obtener la fecha en hora local del navegador
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, '0');
+  const day = String(fecha.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
 }
 
 // verificar si una fecha es de hoy

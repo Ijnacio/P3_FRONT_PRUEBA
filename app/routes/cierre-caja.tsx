@@ -43,26 +43,20 @@ export default function CierreCaja() {
         console.log('✅ Datos de caja recibidos:', dataCaja);
         setCaja(dataCaja);
         
-        // Cargar ventas del día
+        // Cargar ventas del vendedor
         const dataVentas = await getMisVentas();
-        console.log('✅ Ventas recibidas:', dataVentas?.length || 0, 'ventas');
-        
-        // Filtrar solo ventas del día actual
         const hoy = getFechaHoy();
-        console.log('📅 Fecha de hoy (local):', hoy);
-        console.log('📋 Fechas de ventas del backend:', (dataVentas || []).map(v => ({
-          id: v.id,
-          folio: v.folio,
-          fecha: v.fecha,
-          fechaExtraida: extraerFecha(v.fecha || ''),
-          esHoy: extraerFecha(v.fecha || '') === hoy
-        })));
+        console.log('Fecha de hoy:', hoy);
+        console.log('Ventas recibidas del backend:', dataVentas?.length || 0);
         
         const ventasDelDia = (dataVentas || []).filter(v => {
           if (!v.fecha) return false;
-          return extraerFecha(v.fecha) === hoy;
+          const fechaLocal = extraerFecha(v.fecha);
+          console.log(`Venta #${v.folio}: fecha backend=${v.fecha}, fecha local=${fechaLocal}, esHoy=${fechaLocal === hoy}`);
+          return fechaLocal === hoy;
         });
-        console.log('✅ Ventas filtradas del día:', ventasDelDia.length);
+        
+        console.log('Ventas del día filtradas:', ventasDelDia.length);
         setVentas(ventasDelDia);
         
       } catch (error: any) {

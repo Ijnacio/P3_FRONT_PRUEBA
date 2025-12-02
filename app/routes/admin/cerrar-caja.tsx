@@ -37,23 +37,16 @@ export default function AdminCerrarCaja() {
       ]);
       setCajaAdmin(cajaData);
       
-      // Filtrar solo ventas del día actual
       const hoy = getFechaHoy();
-      console.log('📅 ADMIN - Fecha de hoy (local):', hoy);
-      console.log('📋 ADMIN - Fechas de ventas del backend:', (ventasData || []).map(v => ({
-        id: v.id,
-        folio: v.folio,
-        vendedor: v.vendedor,
-        fecha: v.fecha,
-        fechaExtraida: extraerFecha(v.fecha || ''),
-        esHoy: extraerFecha(v.fecha || '') === hoy
-      })));
+      console.log('Fecha de hoy:', hoy);
+      console.log('Ventas recibidas del backend:', ventasData?.length || 0);
       
       const ventasDelDia = (ventasData || []).filter(v => {
         if (!v.fecha) return false;
         return extraerFecha(v.fecha) === hoy;
       });
-      console.log('✅ ADMIN - Ventas filtradas del día:', ventasDelDia.length);
+      
+      console.log('Ventas del día filtradas:', ventasDelDia.length);
       setVentas(ventasDelDia);
     } catch (error) {
       console.error('Error al cargar datos:', error);
