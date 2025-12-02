@@ -169,7 +169,7 @@ export default function POS() {
           <Box sx={{ flex: 1, overflowY: 'auto' }}>
             <Grid container spacing={2}>
               {productosFiltrados.map((prod: Producto) => (
-                <Grid size={{ xs: 6, sm: 4, lg: 3 }} key={prod.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={prod.id}>
                   <ProductoCard producto={prod} />
                 </Grid>
               ))}
@@ -223,7 +223,7 @@ function ProductoCard({ producto }: { producto: Producto }) {
 
   return (
     <Card sx={{ 
-      height: '200px', 
+      height: '280px', 
       display: 'flex', 
       flexDirection: 'column', 
       transition: '0.15s', 
@@ -237,17 +237,19 @@ function ProductoCard({ producto }: { producto: Producto }) {
     }}>
       <CardMedia 
         component="img" 
-        height="110" 
+        height="180" 
         image={imgUrl} 
         alt={producto.nombre} 
         sx={{ 
-          objectFit: 'cover',
+          objectFit: 'contain',
           cursor: cantidadEnCarrito >= producto.stock ? 'not-allowed' : 'pointer',
           transition: '0.15s',
           '&:hover': { opacity: cantidadEnCarrito >= producto.stock ? 1 : 0.9 },
           width: '100%',
-          minHeight: '110px',
-          maxHeight: '110px',
+          minHeight: '180px',
+          maxHeight: '180px',
+          padding: 1,
+          bgcolor: '#f5f5f5',
           opacity: cantidadEnCarrito >= producto.stock ? 0.5 : 1
         }}
         onClick={() => {

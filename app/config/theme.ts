@@ -3,7 +3,7 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#ff80ab', // Rosado Pastel (Tu color de marca)
+      main: '#8880ffff', // Rosado Pastel (Tu color de marca)
       contrastText: '#fff',
     },
     secondary: {
