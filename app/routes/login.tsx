@@ -17,7 +17,7 @@ import {
 import { Person, Lock, Cake } from "@mui/icons-material";
 
 export default function Login() {
-  const [rut, setRut] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,10 +25,13 @@ export default function Login() {
   const { login, user } = useAuth();
   const navigate = useNavigate();
 
-  // si ya esta logueado mandarlo directo a la caja
   useEffect(() => {
     if (user) {
-      navigate('/caja');
+      if (user.rol === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     }
   }, [user, navigate]);
 
@@ -38,14 +41,12 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(rut, password);
+      await login(identifier, password);
     } catch (err: any) {
-      console.error("Error Login:", err);
-      
       if (err.message === "Network Error" || !err.response) {
         setError("No se pudo conectar con el servidor. Revisa que el Backend esté corriendo.");
       } else if (err.response?.status === 401) {
-        setError("RUT o contraseña incorrectos.");
+        setError("Email o contraseña incorrectos.");
       } else {
         setError(`Error del servidor: ${err.response?.data?.message || err.message}`);
       }
@@ -101,13 +102,13 @@ export default function Login() {
                 )}
 
                 <TextField
-                  label="RUT de Usuario"
+                  label="Email o RUT"
                   variant="outlined"
                   fullWidth
-                  value={rut}
-                  onChange={(e) => setRut(e.target.value)}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
-                  placeholder="Ej: 1-9"
+                  placeholder="correo@ejemplo.com o 1-9"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -160,33 +161,75 @@ export default function Login() {
                   border: '1px solid', 
                   borderColor: 'grey.200' 
                 }}>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5, fontWeight: 'bold' }}>
                     Credenciales de prueba:
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                     <Button 
                       variant="outlined" 
                       size="small"
                       onClick={() => {
-                        setRut("1-9");
+                        setIdentifier("1-9");
                         setPassword("admin123");
                       }}
-                      sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                      sx={{ 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        justifyContent: 'flex-start',
+                        color: 'error.main',
+                        borderColor: 'error.main',
+                        '&:hover': { borderColor: 'error.dark', bgcolor: 'error.50' }
+                      }}
                     >
-                      👤 Admin: 1-9 / admin123
+                      🔑 Admin: 1-9 / admin123
                     </Button>
                     <Button 
                       variant="outlined" 
                       size="small"
                       onClick={() => {
-                        setRut("2-7");
-                        setPassword("vendedor123");
+                        setIdentifier("cliente@gmail.com");
+                        setPassword("cliente123");
                       }}
-                      sx={{ textTransform: 'none', fontSize: '0.75rem' }}
+                      sx={{ 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        justifyContent: 'flex-start',
+                        color: 'primary.main',
+                        '&:hover': { bgcolor: 'primary.50' }
+                      }}
                     >
-                      🛒 Vendedor: 2-7 / vendedor123
+                      👤 Cliente: cliente@gmail.com / cliente123
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      onClick={() => {
+                        setIdentifier("maria@gmail.com");
+                        setPassword("cliente123");
+                      }}
+                      sx={{ 
+                        textTransform: 'none', 
+                        fontSize: '0.75rem',
+                        justifyContent: 'flex-start',
+                        color: 'primary.main',
+                        '&:hover': { bgcolor: 'primary.50' }
+                      }}
+                    >
+                      👤 María: maria@gmail.com / cliente123
                     </Button>
                   </Box>
+                </Box>
+
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    ¿No estás registrado?{' '}
+                    <Button 
+                      onClick={() => navigate('/register')} 
+                      sx={{ textTransform: 'none', p: 0, minWidth: 'auto' }}
+                    >
+                      Regístrate aquí
+                    </Button>
+                  </Typography>
                 </Box>
               </Box>
             </form>

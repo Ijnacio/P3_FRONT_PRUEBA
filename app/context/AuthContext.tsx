@@ -6,14 +6,17 @@ import type { User, AuthResponse } from "../types";
 
 interface ExtendedAuthResponse extends AuthResponse {
   nombre?: string;
+  email?: string;
+  telefono?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (rut: string, pass: string) => Promise<void>;
+  login: (identifier: string, pass: string) => Promise<void>;
   logout: () => void;
+  setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,21 +50,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // funcion para hacer login
-  const login = async (rut: string, pass: string) => {
-    const { data } = await api.post<ExtendedAuthResponse>("/auth/login", { rut, password: pass });
+  const login = async (identifier: string, pass: string) => {
+    const { data } = await api.post<ExtendedAuthResponse>("/auth/login", { identifier, password: pass });
 
     // guardar token en localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem("access_token", data.access_token);
     }
     
-    // el backend a veces manda name y a veces nombre, hay que revisar ambos
-    const nombreUsuario = data.name || data.nombre || (data.rol === 'admin' ? 'Administrador' : 'Vendedor');
+    const nombreUsuario = data.name || data.nombre || (data.rol === 'admin' ? 'Administrador' : 'Cliente');
     
     const usuarioLogueado: User = {
       id: 0,
       rut: data.rut,
       name: nombreUsuario,
+      email: data.email,
+      telefono: data.telefono,
       rol: data.rol
     };
 
@@ -73,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.defaults.headers.common["Authorization"] = `Bearer ${data.access_token}`;
   };
 
-  // cerrar sesion y limpiar todo
   const logout = () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem("access_token");
@@ -90,7 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user, 
       isLoading, 
       login, 
-      logout 
+      logout,
+      setUser
     }}>
       {children}
     </AuthContext.Provider>

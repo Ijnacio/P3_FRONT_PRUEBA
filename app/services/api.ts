@@ -2,23 +2,19 @@ import axios from "axios";
 import type { 
   AuthResponse, User, 
   Categoria, Producto, 
-  Venta, CreateVentaInput, 
-  MiCaja, CajaAdmin,
+  Venta, CreateVentaInput,
   CreateUserDto, UpdateUserDto, CreateProductoDto, UpdateProductoDto,
   CreateCategoriaDto, UpdateCategoriaDto
 } from "../types";
 
-// url del backend
 const API_URL = "http://localhost:3006/api/v1";
 
-// crear instancia de axios
 export const api = axios.create({
   baseURL: API_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 10000,
 });
 
-// funcion para verificar si el backend esta funcionando
 export const checkBackendConnection = async () => {
   try {
     const response = await api.get("/health");
@@ -28,7 +24,6 @@ export const checkBackendConnection = async () => {
   }
 };
 
-// interceptor para agregar el token a todas las peticiones
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("access_token");
@@ -39,7 +34,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// interceptor para manejar errores, si el token expiro redirigir al login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -48,36 +42,30 @@ api.interceptors.response.use(
       localStorage.removeItem("user_data");
       window.location.href = "/login";
     }
-    
     return Promise.reject(error);
   }
 );
+export const login = (identifier: string, password: string) => 
+  api.post<AuthResponse>("/auth/login", { identifier, password }).then(res => res.data);
 
-// --- SERVICIOS ---
-
-// Auth
-export const login = (rut: string, password: string) => 
-  api.post<AuthResponse>("/auth/login", { rut, password }).then(res => res.data);
+export const register = (data: { name: string; rut?: string; email: string; password: string; telefono?: string }) => 
+  api.post<User>("/users/register", data).then(res => res.data);
 
 export const getProfile = () => 
   api.get<User>("/auth/profile").then(res => res.data);
+
+export const updateProfile = (data: Partial<User>) => 
+  api.patch<User>("/auth/profile", data).then(res => res.data);
 
 // Productos y Categorías
 export const getCategorias = () => 
   api.get<Categoria[]>("/categorias").then(res => res.data);
 
 export const getProductos = () => 
-  api.get<Producto[]>("/productos").then(res => res.data);
+  api.get<{ productos: Producto[]; total: number }>("/productos").then(res => res.data.productos);
 
-// Ventas
 export const createVenta = (data: CreateVentaInput) => 
   api.post<Venta>("/ventas", data).then(res => res.data);
-
-export const getMiCaja = () => 
-  api.get<MiCaja>("/ventas/mi-caja").then(res => res.data);
-
-export const getCajaAdmin = () => 
-  api.get<CajaAdmin>("/ventas/caja-admin").then(res => res.data);
 
 export const getHistorialAdmin = (startDate?: string, endDate?: string) => {
   const params = new URLSearchParams();
@@ -88,8 +76,11 @@ export const getHistorialAdmin = (startDate?: string, endDate?: string) => {
   return api.get<Venta[]>(url).then(res => res.data);
 };
 
-export const getMisVentas = () => 
-  api.get<Venta[]>("/ventas/mis-ventas").then(res => res.data);
+export const getMisPedidos = () => 
+  api.get<Venta[]>("/ventas/mis-pedidos").then(res => res.data);
+
+export const updateEstadoPedido = (id: number, estado: string) => 
+  api.patch<Venta>(`/ventas/${id}/estado`, { estado }).then(res => res.data);
 
 // Usuarios (Solo Admin)
 export const getUsers = () => 
@@ -124,20 +115,14 @@ export const deleteCategoria = (id: number) =>
 export const getCategoria = (id: number) => 
   api.get<Categoria>(`/categorias/${id}`).then(res => res.data);
 
-// Ventas Admin
 export const updateVenta = (id: number, data: Partial<CreateVentaInput>) => 
   api.patch<Venta>(`/ventas/${id}`, data).then(res => res.data);
 
 export const deleteVenta = (id: number) => 
   api.delete(`/ventas/${id}`).then(res => res.data);
 
-// Funciones faltantes de usuarios
 export const updateUser = (id: number, data: UpdateUserDto) => 
   api.patch<User>(`/users/${id}`, data).then(res => res.data);
 
 export const deleteUser = (id: number) => 
   api.delete(`/users/${id}`).then(res => res.data);
-
-// Seed
-export const runSeed = () => 
-  api.post("/seed").then(res => res.data);

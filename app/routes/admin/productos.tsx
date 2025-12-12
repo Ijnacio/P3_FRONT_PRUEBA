@@ -8,8 +8,8 @@ import {
 import {
   Add, Edit, Delete, Search, Inventory, AttachMoney, Category, Numbers
 } from '@mui/icons-material';
-import type { Producto, Categoria, CreateProductoDto, UpdateProductoDto } from '~/types';
-import { getProductos, getCategorias, createProducto, updateProducto, deleteProducto } from '~/services/api';
+import type { Producto, Categoria, CreateProductoDto, UpdateProductoDto, CreateCategoriaDto } from '~/types';
+import { getProductos, getCategorias, createProducto, updateProducto, deleteProducto, createCategoria } from '~/services/api';
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -17,8 +17,11 @@ export default function AdminProductos() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
+  const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDesc, setNewCategoryDesc] = useState('');
 
   // Estado del formulario
   const [formData, setFormData] = useState<CreateProductoDto>({
@@ -26,7 +29,7 @@ export default function AdminProductos() {
     descripcion: '',
     precio: 0,
     stock: 0,
-    fotoUrl: '',
+    imagen: '',
     categoriaId: 0
   });
 
@@ -34,7 +37,6 @@ export default function AdminProductos() {
     cargarDatos();
   }, []);
 
-  // traer productos y categorias del backend
   const cargarDatos = async () => {
     try {
       setLoading(true);
@@ -42,11 +44,14 @@ export default function AdminProductos() {
         getProductos(),
         getCategorias()
       ]);
-      setProductos(productosData);
-      setCategorias(categoriasData);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-      // datos de ejemplo por si falla
+      setProductos(Array.isArray(productosData) ? productosData : []);
+      setCategorias(Array.isArray(categoriasData) ? categoriasData : []);
+    } catch (error: any) {
+      setNotification({ 
+        open: true, 
+        message: `Error cargando datos: ${error.response?.data?.message || error.message || 'Verifica que el backend esté corriendo'}`, 
+        severity: 'error' 
+      });
       setProductos([
         {
           id: 1,
@@ -80,7 +85,7 @@ export default function AdminProductos() {
         descripcion: producto.categoria?.descripcion || '',
         precio: producto.precio,
         stock: producto.stock,
-        fotoUrl: producto.fotoUrl || '',
+        imagen: producto.imagen || '',
         categoriaId: producto.categoriaId || producto.categoria?.id || 0
       });
     } else {
@@ -90,7 +95,7 @@ export default function AdminProductos() {
         descripcion: '',
         precio: 0,
         stock: 0,
-        fotoUrl: '',
+        imagen: '',
         categoriaId: 0
       });
     }
@@ -110,7 +115,7 @@ export default function AdminProductos() {
           descripcion: formData.descripcion,
           precio: formData.precio,
           stock: formData.stock,
-          fotoUrl: formData.fotoUrl,
+          imagen: formData.imagen,
           categoriaId: formData.categoriaId
         };
         await updateProducto(editingProduct.id, updateData);
@@ -122,7 +127,6 @@ export default function AdminProductos() {
       handleCloseDialog();
       cargarDatos();
     } catch (error) {
-      console.error('Error al guardar producto:', error);
       setNotification({ open: true, message: 'Error al guardar producto', severity: 'error' });
     }
   };
@@ -142,6 +146,27 @@ export default function AdminProductos() {
     }
   };
 
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setNotification({ open: true, message: 'El nombre de la categoría es obligatorio', severity: 'error' });
+      return;
+    }
+    try {
+      const categoryData: CreateCategoriaDto = {
+        nombre: newCategoryName,
+        descripcion: newCategoryDesc || undefined
+      };
+      await createCategoria(categoryData);
+      setNotification({ open: true, message: 'Categoría creada exitosamente', severity: 'success' });
+      setOpenCategoryDialog(false);
+      setNewCategoryName('');
+      setNewCategoryDesc('');
+      cargarDatos();
+    } catch (error: any) {
+      setNotification({ open: true, message: error.response?.data?.message || 'Error al crear categoría', severity: 'error' });
+    }
+  };
+
   const filteredProducts = productos.filter(producto =>
     producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (producto.categoria?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
@@ -153,8 +178,11 @@ export default function AdminProductos() {
 
   if (loading) {
     return (
-      <Box p={3} textAlign="center">
-        <Typography>Cargando productos...</Typography>
+      <Box p={3} display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <Box textAlign="center">
+          <Typography variant="h6" gutterBottom>Cargando productos...</Typography>
+          <Typography variant="body2" color="text.secondary">Por favor espera</Typography>
+        </Box>
       </Box>
     );
   }
@@ -163,16 +191,36 @@ export default function AdminProductos() {
     <Box p={3}>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" fontWeight="bold">
-          Gestión de Productos
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
-          Nuevo Producto
-        </Button>
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            Gestión de Productos
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {productos.length} producto{productos.length !== 1 ? 's' : ''} registrado{productos.length !== 1 ? 's' : ''}
+          </Typography>
+        </Box>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            onClick={cargarDatos}
+          >
+            Recargar
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<Category />}
+            onClick={() => setOpenCategoryDialog(true)}
+          >
+            Nueva Categoría
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => handleOpenDialog()}
+          >
+            Nuevo Producto
+          </Button>
+        </Box>
       </Box>
 
       {/* Estadísticas */}
@@ -265,7 +313,7 @@ export default function AdminProductos() {
                   <TableCell>
                     <Box display="flex" alignItems="center">
                       <Avatar
-                        src={producto.fotoUrl?.startsWith('/') ? `http://localhost:3006${producto.fotoUrl}` : producto.fotoUrl}
+                        src={producto.imagen || producto.fotoUrl ? `http://localhost:3006${producto.imagen || producto.fotoUrl}` : ''}
                         sx={{ mr: 2, bgcolor: 'primary.main' }}
                       >
                         {producto.nombre.charAt(0)}
@@ -324,9 +372,19 @@ export default function AdminProductos() {
 
         {filteredProducts.length === 0 && (
           <Box p={4} textAlign="center">
-            <Typography color="text.secondary">
-              No se encontraron productos
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              {productos.length === 0 ? 'No hay productos registrados' : 'No se encontraron productos con ese criterio'}
             </Typography>
+            {productos.length === 0 && (
+              <Button 
+                variant="contained" 
+                startIcon={<Add />}
+                onClick={() => handleOpenDialog()}
+                sx={{ mt: 2 }}
+              >
+                Crear Primer Producto
+              </Button>
+            )}
           </Box>
         )}
       </Paper>
@@ -416,8 +474,8 @@ export default function AdminProductos() {
             <TextField
               label="URL de la imagen"
               fullWidth
-              value={formData.fotoUrl}
-              onChange={(e) => setFormData({ ...formData, fotoUrl: e.target.value })}
+              value={formData.imagen}
+              onChange={(e) => setFormData({ ...formData, imagen: e.target.value })}
             />
           </Box>
         </DialogContent>
@@ -425,6 +483,49 @@ export default function AdminProductos() {
           <Button onClick={handleCloseDialog}>Cancelar</Button>
           <Button onClick={handleSave} variant="contained">
             {editingProduct ? 'Actualizar' : 'Crear'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog para crear categoría */}
+      <Dialog open={openCategoryDialog} onClose={() => setOpenCategoryDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Category color="primary" />
+            <Typography variant="h6">Nueva Categoría</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Nombre de la categoría"
+              fullWidth
+              required
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Ej: Bebidas, Panadería, Lácteos..."
+            />
+            <TextField
+              label="Descripción (opcional)"
+              fullWidth
+              multiline
+              rows={3}
+              value={newCategoryDesc}
+              onChange={(e) => setNewCategoryDesc(e.target.value)}
+              placeholder="Describe brevemente la categoría..."
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setOpenCategoryDialog(false);
+            setNewCategoryName('');
+            setNewCategoryDesc('');
+          }}>
+            Cancelar
+          </Button>
+          <Button onClick={handleCreateCategory} variant="contained">
+            Crear Categoría
           </Button>
         </DialogActions>
       </Dialog>

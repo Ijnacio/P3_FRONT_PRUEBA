@@ -29,7 +29,7 @@ export default function AdminUsuarios() {
     name: '',
     rut: '',
     password: '',
-    rol: 'vendedor'
+    rol: 'admin'
   });
 
   useEffect(() => {
@@ -43,8 +43,6 @@ export default function AdminUsuarios() {
       const usuariosData = await getUsers();
       setUsuarios(usuariosData);
     } catch (error) {
-      console.error('Error al cargar usuarios:', error);
-      // datos de ejemplo si no conecta
       setUsuarios([
         {
           id: 1,
@@ -56,13 +54,13 @@ export default function AdminUsuarios() {
           id: 2,
           rut: '98765432-1',
           name: 'Juan Pérez',
-          rol: 'vendedor'
+          rol: 'cliente'
         },
         {
           id: 3,
           rut: '11223344-5',
           name: 'María García',
-          rol: 'vendedor'
+          rol: 'cliente'
         }
       ]);
     } finally {
@@ -85,7 +83,7 @@ export default function AdminUsuarios() {
         name: '',
         rut: '',
         password: '',
-        rol: 'vendedor'
+        rol: 'admin'
       });
     }
     setOpenDialog(true);
@@ -103,7 +101,7 @@ export default function AdminUsuarios() {
         name: '',
         rut: '',
         password: '',
-        rol: 'vendedor'
+        rol: 'admin'
       });
     }, 200);
   };
@@ -128,7 +126,7 @@ export default function AdminUsuarios() {
         const updateData: UpdateUserDto = {
           name: formData.name,
           rut: formData.rut,
-          rol: formData.rol
+          rol: 'admin' as 'admin' | 'cliente'
         };
         // Nueva lógica de cambio de contraseña con currentPassword y newPassword
         if (changePassword) {
@@ -142,13 +140,12 @@ export default function AdminUsuarios() {
         await updateUser(editingUser.id, updateData);
         setNotification({ open: true, message: 'Usuario actualizado exitosamente', severity: 'success' });
       } else {
-        await createUser(formData);
-        setNotification({ open: true, message: 'Usuario creado exitosamente', severity: 'success' });
+        await createUser({ ...formData, rol: 'admin' });
+        setNotification({ open: true, message: 'Administrador creado exitosamente', severity: 'success' });
       }
       handleCloseDialog();
       cargarUsuarios();
     } catch (error: any) {
-      console.error('Error al guardar usuario:', error);
       const errorMsg = error.response?.data?.message 
         || (Array.isArray(error.response?.data?.message) ? error.response?.data?.message.join(', ') : '')
         || error.message 
@@ -168,7 +165,6 @@ export default function AdminUsuarios() {
       setNotification({ open: true, message: 'Usuario desactivado exitosamente. El RUT ha sido liberado.', severity: 'success' });
       cargarUsuarios();
     } catch (error: any) {
-      console.error('Error al eliminar usuario:', error);
       const errorMsg = error.response?.data?.message || error.message || 'Error al eliminar usuario';
       setNotification({ open: true, message: errorMsg, severity: 'error' });
       setDeleteConfirmDialog({ open: false, userId: 0 });
@@ -183,7 +179,7 @@ export default function AdminUsuarios() {
 
   const totalUsers = usuarios.length;
   const adminCount = usuarios.filter(u => u.rol === 'admin').length;
-  const vendedorCount = usuarios.filter(u => u.rol === 'vendedor').length;
+  const clienteCount = usuarios.filter(u => u.rol === 'cliente').length;
 
   const getRolColor = (rol: string) => {
     return rol === 'admin' ? 'primary' : 'secondary';
@@ -213,7 +209,7 @@ export default function AdminUsuarios() {
           startIcon={<Add />}
           onClick={() => handleOpenDialog()}
         >
-          Nuevo Usuario
+          Nuevo Administrador
         </Button>
       </Box>
 
@@ -261,13 +257,13 @@ export default function AdminUsuarios() {
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
                   <Typography color="text.secondary" variant="subtitle2">
-                    VENDEDORES
+                    CLIENTES
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="success.main">
-                    {vendedorCount}
+                    {clienteCount}
                   </Typography>
                 </Box>
-                <Store color="success" sx={{ fontSize: 40 }} />
+                <Person color="success" sx={{ fontSize: 40 }} />
               </Box>
             </CardContent>
           </Card>
@@ -326,20 +322,26 @@ export default function AdminUsuarios() {
                     />
                   </TableCell>
                   <TableCell align="center">
-                    <IconButton
-                      onClick={() => handleOpenDialog(usuario)}
-                      color="primary"
-                      size="small"
-                    >
-                      <Edit />
-                    </IconButton>
-                    <IconButton
-                      onClick={() => handleDeleteClick(usuario.id)}
-                      color="error"
-                      size="small"
-                    >
-                      <Delete />
-                    </IconButton>
+                    {usuario.rol === 'admin' ? (
+                      <>
+                        <IconButton
+                          onClick={() => handleOpenDialog(usuario)}
+                          color="primary"
+                          size="small"
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          onClick={() => handleDeleteClick(usuario.id)}
+                          color="error"
+                          size="small"
+                        >
+                          <Delete />
+                        </IconButton>
+                      </>
+                    ) : (
+                      <Chip label="Solo lectura" size="small" variant="outlined" />
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -359,7 +361,7 @@ export default function AdminUsuarios() {
       {/* Dialog para crear/editar usuario */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+          {editingUser ? 'Editar Administrador' : 'Nuevo Administrador'}
         </DialogTitle>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} mt={2}>
@@ -431,18 +433,20 @@ export default function AdminUsuarios() {
               </Box>
             )}
 
-            <FormControl fullWidth>
+            <FormControl fullWidth disabled>
               <InputLabel id="rol-label">Rol</InputLabel>
               <Select
                 labelId="rol-label"
                 label="Rol"
-                value={formData.rol}
-                onChange={(e) => setFormData({ ...formData, rol: e.target.value as 'admin' | 'vendedor' })}
+                value="admin"
               >
-                <MenuItem value="vendedor">Vendedor</MenuItem>
                 <MenuItem value="admin">Administrador</MenuItem>
               </Select>
             </FormControl>
+            
+            <Alert severity="info" sx={{ mt: 1 }}>
+              Los clientes se registran automáticamente desde la página de registro. Aquí solo puedes crear otros administradores.
+            </Alert>
           </Box>
         </DialogContent>
         <DialogActions>

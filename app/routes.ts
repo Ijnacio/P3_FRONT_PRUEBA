@@ -1,23 +1,27 @@
 import { type RouteConfig, index, route, layout } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"), // Página pública (Landing o Login)
+  // Página principal
+  index("routes/home.tsx"),
   
-  route("login", "routes/login.tsx"), // /login
+  // Autenticación (Público)
+  route("login", "routes/login.tsx"),
+  route("register", "routes/register.tsx"),
   
-  // Rutas del Cajero (POS)
-  route("caja", "routes/pos.tsx"), // /caja
-  route("cierre-caja", "routes/cierre-caja.tsx"), // /cierre-caja (Resumen diario)
+  // ========== RUTAS DE CLIENTE ==========
+  route("productos", "routes/cliente/productos.tsx"),
+  route("producto/:id", "routes/cliente/producto-detalle.tsx"),
+  route("carrito", "routes/cliente/carrito.tsx"),
+  route("checkout", "routes/cliente/checkout.tsx"),
+  route("mis-pedidos", "routes/cliente/mis-pedidos.tsx"),
+  route("perfil", "routes/cliente/perfil.tsx"),
 
-  // Rutas del Admin (Protegidas)
-  // Usamos un layout especial para el menú lateral del admin
+  // ========== RUTAS DE ADMINISTRADOR ==========
   layout("components/layouts/AdminLayout.tsx", [
-    route("admin", "routes/admin/dashboard.tsx"), // /admin (Dashboard)
+    route("admin", "routes/admin/dashboard.tsx"),
     route("admin/productos", "routes/admin/productos.tsx"),
-    route("admin/categorias", "routes/admin/categorias.tsx"),
     route("admin/usuarios", "routes/admin/usuarios.tsx"),
-    route("admin/ventas", "routes/admin/ventas.tsx"),
-    route("admin/cerrar-caja", "routes/admin/cerrar-caja.tsx"),
+    route("admin/pedidos", "routes/admin/pedidos.tsx"),
   ]),
 
 ] satisfies RouteConfig;

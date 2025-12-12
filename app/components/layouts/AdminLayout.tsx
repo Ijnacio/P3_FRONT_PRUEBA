@@ -36,12 +36,11 @@ export default function AdminLayout() {
   const menuItems = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/admin' },
     { text: 'Productos', icon: <Inventory />, path: '/admin/productos' },
-    { text: 'Categorías', icon: <Category />, path: '/admin/categorias' },
-    { text: 'Usuarios', icon: <People />, path: '/admin/usuarios' },
-    { text: 'Historial Ventas', icon: <ReceiptLong />, path: '/admin/ventas' },
-    { text: 'Cerrar Caja', icon: <MonetizationOn />, path: '/admin/cerrar-caja' },
-    { text: 'Ir a Caja', icon: <PointOfSale />, path: '/caja' },
+    { text: 'Administradores', icon: <People />, path: '/admin/usuarios' },
+    { text: 'Pedidos', icon: <ReceiptLong />, path: '/admin/pedidos' },
   ];
+
+  const storeItem = { text: 'Ir a Tienda', icon: <MonetizationOn />, path: '/' };
 
   const drawerContent = (
     <div>
@@ -75,6 +74,12 @@ export default function AdminLayout() {
       <Divider sx={{ my: 2 }} />
       <List>
         <ListItem disablePadding>
+          <ListItemButton onClick={() => navigate(storeItem.path)}>
+            <ListItemIcon sx={{ color: 'success.main' }}>{storeItem.icon}</ListItemIcon>
+            <ListItemText primary={storeItem.text} primaryTypographyProps={{ color: 'success.main', fontWeight: 'bold' }} />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
           <ListItemButton onClick={logout}>
             <ListItemIcon><Logout color="error" /></ListItemIcon>
             <ListItemText primary="Cerrar Sesión" primaryTypographyProps={{ color: 'error' }} />
@@ -92,7 +97,7 @@ export default function AdminLayout() {
           <IconButton color="inherit" edge="start" onClick={handleDrawerToggle} sx={{ mr: 2 }}>
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Administración
           </Typography>
         </Toolbar>
